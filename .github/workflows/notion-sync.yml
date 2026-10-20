@@ -1,0 +1,37 @@
+name: Notion → GitHub 풀이 업로드
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # 30분마다 확인
+  workflow_dispatch:          # Actions 탭에서 수동 실행도 가능
+
+permissions:
+  contents: write
+
+concurrency:
+  group: notion-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests
+
+      - name: Git 사용자 설정
+        run: |
+          git config user.name "notion-sync-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: 노션 '업로드 대기' 풀이 업로드
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: python scripts/notion_sync.py
